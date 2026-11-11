@@ -1,0 +1,49 @@
+mediapipe-hand-landmarker-code
+Generate or update Python code using MediaPipe HandLandmarker API for hand gesture recognition and video stream processing.
+
+Instructions
+MediaPipe HandLandmarker API (Python)
+This skill provides instructions for generating or modifying Python code that uses the MediaPipe HandLandmarker API (the newer tasks API) for detecting hands and recognizing gestures from a video stream.
+
+When to Use
+When the user asks to write or update Python code for hand gesture recognition using MediaPipe.
+When the user asks for code using mediapipe.tasks.python.vision.HandLandmarker.
+Steps
+Understand the User's Request: Determine if they want a full script, a specific function (like gesture logic), or modifications to existing code.
+Use the Proper API: Always use the modern mediapipe.tasks.python.vision API, not the older mp.solutions.hands API, unless specifically requested otherwise.
+Include Necessary Imports:
+import cv2
+import os
+from mediapipe import Image, ImageFormat
+from mediapipe.tasks import python as mp_python
+from mediapipe.tasks.python import vision
+Initialize the Landmarker Correctly:
+Define aliases for convenience:
+BaseOptions = mp_python.BaseOptions
+HandLandmarker = vision.HandLandmarker
+HandLandmarkerOptions = vision.HandLandmarkerOptions
+VisionRunningMode = vision.RunningMode
+Construct the path to the .task model file (usually hand_landmarker.task), preferably using os.path relative to the script location to avoid issues with different working directories.
+Configure HandLandmarkerOptions. For video, ensure running_mode=VisionRunningMode.VIDEO. Set thresholds as needed.
+Create the landmarker: HandLandmarker.create_from_options(...)
+Process Video Frames:
+Read from cv2.VideoCapture.
+Crucial Step: Convert the frame to an RGB MediaPipe Image object:
+rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+mp_image = Image(image_format=ImageFormat.SRGB, data=rgb_image)
+In VIDEO mode, maintain a strictly increasing timestamp_ms and call landmarker.detect_for_video(mp_image, timestamp_ms).
+Extract Data:
+Results are in results.hand_landmarks (list of point lists) and results.handedness.
+Coordinates are normalized (0.0 to 1.0). Multiply by image dimensions to get pixel coordinates.
+Drawing (if applicable):
+The modern API does not include drawing_utils. Hand define connections if drawing the skeleton is required.
+Use cv2.circle and cv2.line.
+Gesture Logic (if applicable):
+Ensure the code considers image flipping (mirrored view) if cv2.flip(image, 1) was used, as this affects Left/Right handedness and X-axis logic (e.g., for thumbs).
+Use the standard 21-point hand landmark indices.
+Cleanup: Remember to release the capture and close() the landmarker.
+Gotchas
+Model File: The code requires the hand_landmarker.task file to exist at the specified path. Remind the user to download it if generating a full script.
+Video Mode Timestamps: detect_for_video must have monotonically increasing timestamps. Do not use random or constant values.
+drawing_utils Missing: Do not attempt to use mp.solutions.drawing_utils when using the new tasks.python.vision API. It is incompatible with the new result format.
+Coordinate Scaling: Always remember that lm.x and lm.y must be multiplied by image width and height respectively for OpenCV drawing functions.

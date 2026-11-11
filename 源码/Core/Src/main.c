@@ -128,6 +128,10 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
                 case 0x10: Face_Mode=4; 	Move_Start_Continuous(MOVE_FAST_SHAKE_QIANHOU, 1); 	break;   //{ID:10,keyword:"命令词",ASR:		"加速",				ASRTO:"wow"}
                 case 0x11: Face_Mode=4; 	Move_Start_Continuous(MOVE_FAST_SHAKE_QIANHOU, 1); 	break;   //{ID:11,keyword:"命令词",ASR:		"摇摆加速",			ASRTO:"欧耶"}
                 case 0x12: Face_Mode=2;		Move_Start_Continuous(MOVE_WAG_TAIL, 1);			break;   //{ID:12,keyword:"命令词",ASR:		"摇尾巴",			ASRTO:"哈基米"}
+                // Hand gesture commands (sent from PC via Bluetooth, see CV/hand_identify.py)
+                case 0x21: Face_Mode=4;	Move_Start_Continuous(MOVE_FAST_SHAKE_QIANHOU, 1);	break;   // gesture: open hand (5 fingers)
+                case 0x22: Face_Mode=0;	Move_Start_Continuous(MOVE_SLEEP, 1);				break;   // gesture: fist
+                case 0x23: Face_Mode=2;	Move_Start_Continuous(MOVE_WAG_TAIL, 1);				break;   // gesture: two fingers (V)
                 default:   Move_Stop(); 														break;  // 未知命令，停止所有动作
             }
         }
