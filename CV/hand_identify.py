@@ -6,7 +6,7 @@ hand_identify.py
     0x21 = 张开五指
     0x22 = 握拳
     0x23 = 两根手指（V）
-从机端 USART3 空闲中断读取该字节后执行对应动作（见 源码/Core/Src/main.c 的 case 0x21~0x23）。
+从机端 USART3 循环 DMA 接收后由主循环执行动作（见 源码/MyDriver/RobotControl.c 的指令分发）。
 
 用法：
     python hand_identify.py [COM口]    例如：python hand_identify.py COM7
@@ -31,7 +31,7 @@ DEBOUNCE_FRAMES = 5     # 手势连续保持多少帧才确认（防抖，避免
 FINGER_ANGLE_THRESHOLD = 40   # 指骨夹角小于该角度(°)判定为伸直
 THUMB_X_MARGIN = 0.03   # 拇指指尖与指间关节的横向距离阈值（归一化坐标）
 
-# 手势编码（发给从机的指令字节），与从机 main.c 的 case 对应
+# 手势编码（发给从机的指令字节），与从机 RobotControl.c 的 case 对应
 CMD_OPEN = 0x21   # 张开五指
 CMD_FIST = 0x22   # 握拳
 CMD_TWO  = 0x23   # 两根手指

@@ -1,100 +1,107 @@
-#include "servo.h"                  // Device header
+#include "Servo.h"
 #include "tim.h"
 
-/**
-  * 函    数：PWM设置CCR
-  * 参    数：Compare 要写入的CCR的值，范围：0~100
-  * 返 回 值：无
-  * 注意事项：CCR和ARR共同决定占空比，此函数仅设置CCR的值，并不直接是占空比
-  *           占空比Duty = CCR / (ARR + 1)
-  */
-void PWM_SetCompare1(uint16_t Compare)//右前脚
+/* 20 ms period, 1 us timer ticks; GPIO mapping follows hardware/引脚连接.md. */
+void PWM_SetCompare1(uint16_t compare) /* 左前 LF: PA7, TIM3_CH2 */
 {
-	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, Compare);
-}
-void PWM_SetCompare2(uint16_t Compare)//右后脚
-{
-	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, Compare);
-}
-void PWM_SetCompare3(uint16_t Compare)//左前脚
-{
-	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, Compare);
-}
-void PWM_SetCompare4(uint16_t Compare)//左后脚
-{
-	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, Compare);
-}
-void PWM_SetCompare5(uint16_t Compare)//尾巴 
-{
-	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, Compare);
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, compare);
 }
 
-/**
-  * 函    数：舵机初始化
-  * 参    数：无
-  * 返 回 值：无
-  */
+void PWM_SetCompare2(uint16_t compare) /* 左后 LB: PA3, TIM2_CH4 */
+{
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, compare);
+}
+
+void PWM_SetCompare3(uint16_t compare) /* 右前 RF: PA0, TIM2_CH1 */
+{
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, compare);
+}
+
+void PWM_SetCompare4(uint16_t compare) /* 右后 RB: PA1, TIM2_CH2 */
+{
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, compare);
+}
+
+void PWM_SetCompare5(uint16_t compare) /* 尾巴 M: PA2, TIM2_CH3 */
+{
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, compare);
+}
+
 void Servo_Init(void)
 {
-	//初始化舵机的底层PWM
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
-	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+    /* Set neutral pulses before enabling outputs; avoid an initial zero pulse. */
+    Servo_SetAngle1(90);
+    Servo_SetAngle2(90);
+    Servo_SetAngle3(90);
+    Servo_SetAngle4(90);
+    Servo_SetAngle5(90);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
+    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
 }
 
-/**
-  * 函    数：舵机设置角度
-  * 参    数：Angle 要设置的舵机角度，范围：0~180
-  * 返 回 值：无
-  */
-void Servo_SetAngle1(float Angle)//左上
+static uint16_t Angle_To_Pulse(float angle)
 {
-	Angle = 180 - Angle;
-	PWM_SetCompare1(Angle / 180 * 2000 + 500);	//设置占空比
-}
-void Servo_SetAngle2(float Angle)//右上
-{
-	PWM_SetCompare2(Angle / 180 * 2000 + 500);	//设置占空比
-}
-void Servo_SetAngle3(float Angle)//左下
-{
-	Angle = 180 - Angle;
-	PWM_SetCompare3(Angle / 180 * 2000 + 500);	//设置占空比
-}
-void Servo_SetAngle4(float Angle)//右下
-{
-	PWM_SetCompare4(Angle / 180 * 2000 + 500);	//设置占空比
-}
-void Servo_SetAngle5(float Angle)//尾巴
-{
-	PWM_SetCompare5(Angle / 180 * 2000 + 500);	//设置占空比
+    if (angle < 0.0f) angle = 0.0f;
+    if (angle > 180.0f) angle = 180.0f;
+    return (uint16_t)(angle / 180.0f * 2000.0f + 500.0f);
 }
 
-/**
-  * 函    数：舵机读取角度
-  * 参    数：无
-  * 返 回 值：舵机角度，范围：0~180
-  */
+static uint8_t Pulse_To_Angle(uint32_t pulse)
+{
+    if (pulse <= 500U) return 0U;
+    if (pulse >= 2500U) return 180U;
+    return (uint8_t)((pulse - 500U) * 180U / 2000U);
+}
+
+void Servo_SetAngle1(float angle) /* 左前，保留原逻辑反向 */
+{
+    PWM_SetCompare1(Angle_To_Pulse(180.0f - angle));
+}
+
+void Servo_SetAngle2(float angle) /* 左后 */
+{
+    PWM_SetCompare2(Angle_To_Pulse(angle));
+}
+
+void Servo_SetAngle3(float angle) /* 右前，保留原逻辑反向 */
+{
+    PWM_SetCompare3(Angle_To_Pulse(180.0f - angle));
+}
+
+void Servo_SetAngle4(float angle) /* 右后 */
+{
+    PWM_SetCompare4(Angle_To_Pulse(angle));
+}
+
+void Servo_SetAngle5(float angle) /* 尾巴 */
+{
+    PWM_SetCompare5(Angle_To_Pulse(angle));
+}
+
 uint8_t Servo_GetAngle1(void)
 {
-	return (__HAL_TIM_GET_COMPARE(&htim1, TIM_CHANNEL_2) - 500) * 180 / 2000;//占空比的反变换
-}
-uint8_t Servo_GetAngle2(void)
-{
-	return (__HAL_TIM_GET_COMPARE(&htim1, TIM_CHANNEL_1) - 500) * 180 / 2000;//占空比的反变换
-}
-uint8_t Servo_GetAngle3(void)
-{
-	return (__HAL_TIM_GET_COMPARE(&htim1, TIM_CHANNEL_3) - 500) * 180 / 2000;//占空比的反变换
-}
-uint8_t Servo_GetAngle4(void)
-{
-	return (__HAL_TIM_GET_COMPARE(&htim1, TIM_CHANNEL_4) - 500) * 180 / 2000;//占空比的反变换
-}
-uint8_t Servo_GetAngle5(void)
-{
-	return (__HAL_TIM_GET_COMPARE(&htim2, TIM_CHANNEL_1) - 500) * 180 / 2000;//占空比的反变换
+    return Pulse_To_Angle(3000U - __HAL_TIM_GET_COMPARE(&htim3, TIM_CHANNEL_2));
 }
 
+uint8_t Servo_GetAngle2(void)
+{
+    return Pulse_To_Angle(__HAL_TIM_GET_COMPARE(&htim2, TIM_CHANNEL_4));
+}
+
+uint8_t Servo_GetAngle3(void)
+{
+    return Pulse_To_Angle(3000U - __HAL_TIM_GET_COMPARE(&htim2, TIM_CHANNEL_1));
+}
+
+uint8_t Servo_GetAngle4(void)
+{
+    return Pulse_To_Angle(__HAL_TIM_GET_COMPARE(&htim2, TIM_CHANNEL_2));
+}
+
+uint8_t Servo_GetAngle5(void)
+{
+    return Pulse_To_Angle(__HAL_TIM_GET_COMPARE(&htim2, TIM_CHANNEL_3));
+}

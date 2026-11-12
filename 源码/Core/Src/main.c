@@ -17,15 +17,15 @@
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
 #include "OLED.h"
-#include "servo.h"
+#include "Servo.h"
+#include "RobotControl.h"
 #include "Move.h"
 #include <time.h>
 #include <stdlib.h>
-uint16_t OLED_Slow_Down = 0;
+volatile uint16_t OLED_Slow_Down = 0;
 char display_buf[32];
 char buf[32];
 
-uint8_t rx_data[256] = {0};// 串口接收缓冲区
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -109,38 +109,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	}
 }
 
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
-{
-    if (huart->Instance == USART3)
-    {
-        if (Size > 0) {
-            uint8_t cmd = rx_data[0];
-            switch (cmd) {
-                case 0x01: Face_Mode=0;		Move_Start_Continuous(MOVE_SLEEP, 1); 				break;   //{ID:1,keyword:"命令词",ASR:		"睡觉",				ASRTO:"晚安，玛卡巴卡"}
-                case 0x02: Face_Mode=1; 	Move_Start_Continuous(MOVE_DunXia, 1); 				break;   //{ID:2,keyword:"命令词",ASR:		"蹲下",				ASRTO:"知道了"}
-                case 0x03: Face_Mode=5;	 	Move_Start_Continuous(MOVE_STAND, 1); 				break;   //{ID:3,keyword:"命令词",ASR:		"立正",				ASRTO:"我立了"}
-                case 0x04: Face_Mode=1; 	Move_Start_Continuous(MOVE_PaXia, 1); 				break;   //{ID:4,keyword:"命令词",ASR:		"趴下",				ASRTO:"你搁这训狗呢"}
-                case 0x05: Face_Mode=2; 	Move_Start_Continuous(MOVE_FORWARD, 2); 			break;   //{ID:5,keyword:"命令词",ASR:		"前进",				ASRTO:"我他妈创死你"}
-                case 0x06: Face_Mode=2; 	Move_Start_Continuous(MOVE_BEHIND, 2); 				break;   //{ID:6,keyword:"命令词",ASR:		"后退",				ASRTO:"请注意倒车，坦克是没有后视镜的"}
-                case 0x07: Face_Mode=2; 	Move_Start_Continuous(MOVE_LEFT, 5);			 	break;   //{ID:7,keyword:"命令词",ASR:		"左转",				ASRTO:"曼波左转"}
-                case 0x08: Face_Mode=2; 	Move_Start_Continuous(MOVE_RIGHT, 5); 				break;   //{ID:8,keyword:"命令词",ASR:		"右转",				ASRTO:"曼波右转"}
-                case 0x09: Face_Mode=2;	 	Move_Start_Continuous(MOVE_SHAKE_QIANHOU, 1); 		break;   //{ID:9,keyword:"命令词",ASR:		"摇摆",				ASRTO:"曼波傻笑"}
-                case 0x10: Face_Mode=4; 	Move_Start_Continuous(MOVE_FAST_SHAKE_QIANHOU, 1); 	break;   //{ID:10,keyword:"命令词",ASR:		"加速",				ASRTO:"wow"}
-                case 0x11: Face_Mode=4; 	Move_Start_Continuous(MOVE_FAST_SHAKE_QIANHOU, 1); 	break;   //{ID:11,keyword:"命令词",ASR:		"摇摆加速",			ASRTO:"欧耶"}
-                case 0x12: Face_Mode=2;		Move_Start_Continuous(MOVE_WAG_TAIL, 1);			break;   //{ID:12,keyword:"命令词",ASR:		"摇尾巴",			ASRTO:"哈基米"}
-                // Hand gesture commands (sent from PC via Bluetooth, see CV/hand_identify.py)
-                case 0x21: Face_Mode=4;	Move_Start_Continuous(MOVE_FAST_SHAKE_QIANHOU, 1);	break;   // gesture: open hand (5 fingers)
-                case 0x22: Face_Mode=0;	Move_Start_Continuous(MOVE_SLEEP, 1);				break;   // gesture: fist
-                case 0x23: Face_Mode=2;	Move_Start_Continuous(MOVE_WAG_TAIL, 1);				break;   // gesture: two fingers (V)
-                default:   Move_Stop(); 														break;  // 未知命令，停止所有动作
-            }
-        }
-        HAL_UARTEx_ReceiveToIdle_DMA(&huart3, rx_data, sizeof(rx_data));// 重新启动接收
-        __HAL_DMA_DISABLE_IT(huart3.hdmarx, DMA_IT_HT);
-    }
-}
-
-
 /* USER CODE END 0 */
 
 /**
@@ -174,8 +142,8 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_TIM4_Init();
+  MX_USART1_UART_Init();
   MX_USART3_UART_Init();
-  MX_TIM1_Init();
   MX_TIM3_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
@@ -195,8 +163,7 @@ int main(void)
 	Move_Init();
     Move_Start_Continuous(MOVE_SLEEP, 1);
 
-	HAL_UARTEx_ReceiveToIdle_DMA(&huart3, rx_data, sizeof(rx_data));// 接收不定长数据
-	__HAL_DMA_DISABLE_IT(huart3.hdmarx, DMA_IT_HT);// 关闭DMA传输过半中断
+	RobotControl_Init();
 	
 	HAL_TIM_Base_Start_IT(&htim4);  // 开启定时器4定时中断
   /* USER CODE END 2 */
@@ -206,6 +173,7 @@ int main(void)
   while (1)
   {
 	  /* 非阻塞式处理各个任务 */
+	  RobotControl_Process();
 	  OLED_Proc();         // OLED显示处理
 	  Move_Process();      // 运动控制处理
     /* USER CODE END WHILE */

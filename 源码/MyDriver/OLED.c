@@ -97,7 +97,7 @@ uint8_t OLED_DisplayBuf[8][128];
   */
 void OLED_W_SCL(GPIO_PinState BitValue)
 {
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, BitValue);
+	HAL_GPIO_WritePin(OLED_SCL_GPIO_Port, OLED_SCL_Pin, BitValue);
 }
 
 /**
@@ -110,7 +110,7 @@ void OLED_W_SCL(GPIO_PinState BitValue)
   */
 void OLED_W_SDA(GPIO_PinState BitValue)
 {
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, BitValue);
+	HAL_GPIO_WritePin(OLED_SDA_GPIO_Port, OLED_SDA_Pin, BitValue);
 }
 
 /**

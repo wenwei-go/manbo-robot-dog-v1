@@ -1,5 +1,5 @@
 #include "Move.h"
-#include "servo.h"
+#include "Servo.h"
 
 // 全局变量
 MoveControl_t g_move_ctrl;  // 全局运动控制结构体

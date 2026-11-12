@@ -601,6 +601,16 @@
               <FilePath>..\MyDriver\Servo.h</FilePath>
             </File>
             <File>
+              <FileName>RobotControl.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\MyDriver\RobotControl.c</FilePath>
+            </File>
+            <File>
+              <FileName>RobotControl.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\MyDriver\RobotControl.h</FilePath>
+            </File>
+            <File>
               <FileName>Move.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\MyDriver\Move.c</FilePath>
